@@ -23,7 +23,8 @@ echo "\n------------------------------------  syslog report  -------------------
 #cat /root/report.txt
 
 echo "\n------------------------------------  Changed files  ------------------------------------------------"
-find / -type f -mtime -1 2> /dev/null |grep -v proc|grep -v sys|grep -v var|grep -v home|grep -v run 
+find / -type f -mtime -1 2> /dev/null | agrep 'proc;sys;var;home;run'
+#find / -type f -mtime -1 2> /dev/null |grep -v proc|grep -v sys|grep -v var|grep -v home|grep -v run 
 
 
 
