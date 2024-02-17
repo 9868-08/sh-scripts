@@ -1,61 +1,53 @@
-#!/bin/sh
+#!/bin/sh -x
 
-iptables -P INPUT DROP
-iptables -P OUTPUT DROP
-iptables -P FORWARD DROP
+/home/dinky/bin/firewall_open.sh
 
 iptables -A INPUT -i lo -j ACCEPT 
-iptables -A OUTPUT -o lo -j ACCEPT
+iptables -A INPUT -i tun0 -j ACCEPT 
+
+
+iptables -P INPUT DROP
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
 
 iptables -A INPUT -p icmp --icmp-type 0 -j ACCEPT
 iptables -A INPUT -p icmp --icmp-type 8 -j ACCEPT
-iptables -A OUTPUT -p icmp -j ACCEPT
 
-iptables -A OUTPUT -p TCP --sport 32768:61000 -j ACCEPT
-iptables -A OUTPUT -p UDP --sport 32768:61000 -j ACCEPT
 iptables -A INPUT -p TCP -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A INPUT -p UDP -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-iptables -P OUTPUT ACCEPT
 
 # настройка локальных сервисов
-iptables -A INPUT  -i venet0:0 -p TCP --dport 10022 -j ACCEPT 
-iptables -A OUTPUT -o venet0:0 -p TCP --sport 10022 -j ACCEPT
-
-
-iptables -A INPUT  -i venet0:0 -p TCP --dport 1194 -j ACCEPT 
-iptables -A OUTPUT -o venet0:0 -p TCP --sport 1194 -j ACCEPT
-
-iptables -A INPUT  -i venet0:0 -p TCP --dport 80 -j ACCEPT 
-iptables -A OUTPUT -o venet0:0 -p TCP --sport 80 -j ACCEPT
-
-iptables -A INPUT  -i venet0:0 -p TCP --dport 443 -j ACCEPT    
-iptables -A OUTPUT -o venet0:0 -p TCP --sport 443 -j ACCEPT
+iptables -A INPUT  -i eth0 -p TCP --dport 10022 -j ACCEPT     # secured ssh
+#iptables -A INPUT  -i eth0 -p TCP --dport 80 -j ACCEPT 
+iptables -A INPUT  -i eth0 -p TCP --dport 8080 -j ACCEPT 
+iptables -A INPUT  -i eth0 -p TCP --dport 8081 -j ACCEPT 
+iptables -A INPUT  -i eth0 -p TCP --dport 443 -j ACCEPT    
+iptables -A INPUT  -i eth0 -p TCP --dport 8443 -j ACCEPT    
+iptables -A INPUT  -i eth0 -p TCP --dport 3000 -j ACCEPT    
 
 
 #  MASQUERADE
-#iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-#iptables -A FORWARD -m conntrack --ctstate NEW -i eth1 -s 10.0.0.1/24 -j ACCEPT
-#iptables -P FORWARD DROP
-#iptables -t nat -A POSTROUTING -o venet0:0 -j MASQUERADE
+# После выполнения этой команды, все что приходит на адрес 10.129.0.11 по 8080 порту будет передаваться на адрес 10.8.0.1:
+#iptables -t nat -A PREROUTING --dst 10.129.0.11 -p tcp --dport 8080 -j DNAT --to-destination 10.8.0.1
 
-#iptables -P INPUT   ACCEPT
-#iptables -P OUTPUT  ACCEPT
-#iptables -P FORWARD ACCEPT
+#Однако, чтобы все работало как надо, нужно еще добавить разрешающее передачу пакетов правило, так как иначе фаирволл просто не будет пропускать соединения:
+# iptables -I FORWARD 1 -i eth0 -o eth1 -d 10.8.0.1 -p tcp -m tcp --dport 8080 -j ACCEPT
 
+iptables -N LOGGING
+iptables -A INPUT -j LOGGING
+iptables -A LOGGING -m limit --limit 2/min -j LOG --log-prefix "IPTables-FORWARD: " --log-level 4
+iptables -A LOGGING -j FORWARD
 
+#iptables -A INPUT -j DROP *
 
+netfilter-persistent save
+netfilter-persistent start
 
+iptables-save  > /etc/iptables/rules.v4
+ip6tables-save > /etc/iptables/rules.v6
 
+systemctl stop    netfilter-persistent
+systemctl start   netfilter-persistent
+systemctl restart netfilter-persistent
 
-
-
-
-
-
-
-#iptables -P INPUT DROP
-#iptables            -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT  для сохранения текущих подключений!!!
-#iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-#iptables -A INPUT -p tcp --dport 22 -j ACCEPT
