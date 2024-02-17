@@ -1,7 +1,7 @@
 #!/bin/sh
 
-token='5376188347:AAEd7rbmAl4aeeLgSkRwGtgMCO48qf7b6uI'
-chat="418832166"
+token={{token}}
+chat={{chat}}
 
 rm -f /tmp/report.txt
 #echo "====   `date +%Y-%m-%d`    ====" >> /tmp/report.txt
