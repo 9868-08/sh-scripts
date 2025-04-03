@@ -13,7 +13,7 @@ sudo apt -y install docker-ce docker-ce-cli containerd.io
 systemctl start docker
 systemctl enable docker
 groupadd docker
-usermod -aG docker $USER
+usermod -aG docker dinky
 curl -L "https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
